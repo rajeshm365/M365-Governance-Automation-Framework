@@ -43,23 +43,36 @@ Designed for modular growth — easily extendable with new compliance and govern
 
 ```mermaid
 flowchart TD
-    A[Azure Automation - Scheduled Runbook] --> B[Hybrid Worker VM]
-    B --> PS1[Monitor-TeamsSettings.ps1]
-    B --> PS2[Monitor-RetentionPolicy.ps1]
+    A[Azure Automation - scheduled runbook] --> B[Hybrid Worker VM]
+    B --> PS1[Monitor-TeamsSettings ps1]
+    B --> PS2[Monitor-RetentionPolicy ps1]
 
     subgraph Shared Helpers
-      H1[Get-KeyVaultCredential - fetch creds]
-      H2[Build-LogicAppPayload - format alert]
+      H1[Get-KeyVaultCredential - fetch secrets]
+      H2[Build-LogicAppPayload - build adaptive card payload]
     end
 
     PS1 --> H1
     PS2 --> H1
-    H1 --> KV[Azure Key Vault - Service Account Secrets]
+    H1 --> KV[Azure Key Vault - service account secrets]
+    H1 --> PS1
+    H1 --> PS2
 
-    PS1 --> COMP[Compare current vs baseline .txt]
-    PS2 --> COMP
+    %% Service connections per script
+    PS1 --> CONN1[Connect MicrosoftTeams and Graph]
+    PS2 --> CONN2[Connect IPPSSession - Exchange Online]
 
+    %% Current state retrieval
+    CONN1 --> CUR1[Get current Teams app permission policies]
+    CONN2 --> CUR2[Get Purview retention policy distribution status]
+
+    %% Baseline read and comparison
+    PS1 --> BASE[Read baseline txt files]
+    PS2 --> BASE
+    BASE --> COMP[Compare current vs baseline]
+
+    %% Build payload then post to Logic App
     COMP --> H2
-    H2 --> LA[Azure Logic App]
-
-    LA --> TEAMS[Microsoft Teams - Adaptive Card v1.6]
+    H2 --> POST[HTTP POST to Logic App endpoint]
+    POST --> LA[Azure Logic App]
+    LA --> TEAMS[Microsoft Teams - adaptive card v1 dot 6]
