@@ -6,9 +6,9 @@
 - PowerShell Modules:
   - `MicrosoftTeams`
   - `Microsoft.Graph`
-  - `ExchangeOnlineManagement` (for IPPSSession)
+  - `ExchangeOnlineManagement` (for Connect-IPPSSession)
 - Azure Automation + Hybrid Worker
-- Azure Key Vault (Managed Identity)
+- Azure Key Vault(service account credentials)
 - Azure Logic App + Teams Connector
 - Adaptive Card Schema v1.6
 
