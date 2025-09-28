@@ -1,0 +1,173 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowDefinition.json#",
+  "actions": {
+    "Parse_JSON": {
+      "type": "ParseJson",
+      "inputs": {
+        "content": "@triggerBody()",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "component": { "type": "string" },
+            "title": { "type": "string" },
+            "MessageType": { "type": "string" },
+            "Message": { "type": "string" },
+            "Details": { "type": "string" },
+            "MessageTypeColor": { "type": "string" },
+            "TableColumns": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "Table": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "Component": { "type": "string" },
+                  "Description": { "type": "string" },
+                  "SideIndicator": { "type": "string" }
+                },
+                "required": ["Component", "Description", "SideIndicator"]
+              }
+            },
+            "BaselineContent": { "type": "string" },
+            "CurrentContent": { "type": "string" }
+          }
+        }
+      }
+    },
+    "Post_Adaptive_Card": {
+      "type": "ApiConnection",
+      "inputs": {
+        "method": "post",
+        "path": "/v3/conversations/{teamId}/channels/{channelId}/messages",
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['teams']['connectionId']"
+          }
+        },
+        "body": {
+          "type": "AdaptiveCard",
+          "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+          "version": "1.6",
+          "body": [
+            {
+              "type": "TextBlock",
+              "text": "@{body('Parse_JSON')?['component']}",
+              "weight": "Bolder",
+              "size": "Large"
+            },
+            {
+              "type": "TextBlock",
+              "text": "@{body('Parse_JSON')?['title']}",
+              "wrap": true,
+              "size": "Medium",
+              "weight": "Bolder",
+              "color": "@{body('Parse_JSON')?['MessageTypeColor']}"
+            },
+            {
+              "type": "TextBlock",
+              "text": "@{body('Parse_JSON')?['Message']}",
+              "wrap": true
+            },
+            {
+              "type": "TextBlock",
+              "text": "@{body('Parse_JSON')?['Details']}",
+              "wrap": true
+            },
+            {
+              "type": "TextBlock",
+              "text": "Deviations:",
+              "weight": "Bolder"
+            },
+            {
+              "type": "Table",
+              "columns": [
+                {
+                  "type": "TableColumnDefinition",
+                  "width": "stretch"
+                },
+                {
+                  "type": "TableColumnDefinition",
+                  "width": "stretch"
+                },
+                {
+                  "type": "TableColumnDefinition",
+                  "width": "stretch"
+                }
+              ],
+              "rows": "@{body('Parse_JSON')?['Table']}",
+              "firstRowAsHeaders": true
+            },
+            {
+              "type": "TextBlock",
+              "text": "Baseline Settings:",
+              "weight": "Bolder",
+              "spacing": "Medium"
+            },
+            {
+              "type": "TextBlock",
+              "text": "@{body('Parse_JSON')?['BaselineContent']}",
+              "wrap": true
+            },
+            {
+              "type": "TextBlock",
+              "text": "Current Settings:",
+              "weight": "Bolder",
+              "spacing": "Medium"
+            },
+            {
+              "type": "TextBlock",
+              "text": "@{body('Parse_JSON')?['CurrentContent']}",
+              "wrap": true
+            }
+          ]
+        }
+      },
+      "runAfter": {
+        "Parse_JSON": [
+          "Succeeded"
+        ]
+      }
+    }
+  },
+  "triggers": {
+    "When_a_HTTP_request_is_received": {
+      "type": "Request",
+      "kind": "Http",
+      "inputs": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "component": { "type": "string" },
+            "title": { "type": "string" },
+            "MessageType": { "type": "string" },
+            "Message": { "type": "string" },
+            "Details": { "type": "string" },
+            "MessageTypeColor": { "type": "string" },
+            "TableColumns": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "Table": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "Component": { "type": "string" },
+                  "Description": { "type": "string" },
+                  "SideIndicator": { "type": "string" }
+                },
+                "required": ["Component", "Description", "SideIndicator"]
+              }
+            },
+            "BaselineContent": { "type": "string" },
+            "CurrentContent": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "outputs": {},
+  "description": "Logic App to parse compliance alert JSON and post an adaptive card to Microsoft Teams"
+}
