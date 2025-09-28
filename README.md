@@ -1,84 +1,65 @@
+# Teams & Purview Policy Monitoring
+
+⚡ Modular PowerShell + Azure Automation + Logic App framework to monitor Microsoft Teams admin settings and Purview retention policies.  
+Designed for modular growth — easily extendable with new compliance and governance checks.
 
 ---
 
 ## ⚙️ Technologies Used
 
-- PowerShell Modules:
+- **PowerShell Modules**
   - `MicrosoftTeams`
   - `Microsoft.Graph`
-  - `ExchangeOnlineManagement` (for Connect-IPPSSession)
-- Azure Automation + Hybrid Worker
-- Azure Key Vault(service account credentials)
-- Azure Logic App + Teams Connector
-- Adaptive Card Schema v1.6
+  - `ExchangeOnlineManagement` (for `Connect-IPPSSession`)
+- **Azure Automation** + Hybrid Worker
+- **Azure Key Vault** (secure credential storage)
+- **Azure Logic App** + Teams Connector
+- **Adaptive Card Schema** v1.6
 
 ---
 
 ## 🧪 Script Overview
 
 ### Monitor-TeamsSettings.ps1
-
-- Checks Teams App Permission Policies
-- Uses Key Vault to securely fetch service account credentials
-- Compares current and baseline values from `.txt` files
+- Checks Teams App Permission Policies  
+- Fetches service account credentials from Key Vault  
+- Compares current values vs baseline `.txt` files  
 - Sends adaptive card alert with:
-  - Deviation table
-  - Full baseline + current state
+  - Deviation table  
+  - Full baseline + current state  
 
 ### Monitor-RetentionPolicy.ps1
-
-- Retrieves distribution status of Purview Retention Policies
-- Identical pattern as Teams script
-- Reuses the shared payload/credential logic
+- Retrieves distribution status of Purview Retention Policies  
+- Same comparison + alerting pattern as Teams script  
+- Reuses shared credential and payload logic  
 
 ### Shared-Helpers.ps1
-
-- `Get-KeyVaultCredential`: Pulls secrets via managed identity
-- `Build-LogicAppPayload`: Prepares Teams-friendly payload with table, metadata, baseline, and current config
-
----
-
-## 🔔 Alert Format (in Teams)
-
-- **Header**: `Teams Admin Settings Monitoring - Deviations Found`
-- **Deviation Table**: Rendered in adaptive card (Component | Description | SideIndicator)
-- **Current + Baseline Content**: Shown below the table for context
+- `Get-KeyVaultCredential` → Pull secrets from Key Vault via managed identity  
+- `Build-LogicAppPayload` → Format Teams-friendly payload with table, metadata, baseline, and current config  
 
 ---
 
-## 📦 Deployment Steps
+## 🏗️ Architecture
 
-1. **Key Vault**
-   - Add two secrets: service account UPN and password
+```mermaid
+flowchart TD
+    A[Azure Automation - Scheduled Runbook] --> B[Hybrid Worker VM]
+    B --> PS1[Monitor-TeamsSettings.ps1]
+    B --> PS2[Monitor-RetentionPolicy.ps1]
 
-2. **Automation Account**
-   - Import both `.ps1` scripts as Runbooks
-   - Assign Hybrid Worker
-   - Schedule twice daily
+    subgraph Shared Helpers
+      H1[Get-KeyVaultCredential - fetch creds]
+      H2[Build-LogicAppPayload - format alert]
+    end
 
-3. **Logic App**
-   - Deploy `LogicApp-TeamsAlert.json`
-   - Configure Teams connector and channel
-   - Copy HTTP endpoint into your PowerShell `$LogicAppURI`
+    PS1 --> H1
+    PS2 --> H1
+    H1 --> KV[Azure Key Vault - Service Account Secrets]
 
----
+    PS1 --> COMP[Compare current vs baseline .txt]
+    PS2 --> COMP
 
-## 📌 Notes
+    COMP --> H2
+    H2 --> LA[Azure Logic App]
 
-- You can add more scripts into `/src/` for future checks (e.g. license monitoring, DLP scans, service plan alerts)
-- This repo is modular by design
-- Tables rendered inside Logic App, not by PowerShell
-
----
-
-## 🧠 Author
-
-**Rajesh Singh Chaubey**  
-Automation Engineer – HSBC  
-Microsoft 365 Governance | Compliance-as-Code
-
----
-
-## ✅ Status
-
-🟢 Active — Adding new modules as needed for evolving Microsoft 365 risk surfaces.
+    LA --> TEAMS[Microsoft Teams - Adaptive Card v1.6]
